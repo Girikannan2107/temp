@@ -33,7 +33,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+# Optional: Add to your main.py just before app.mount
+import os
+if not os.access(settings.UPLOAD_DIR, os.W_OK):
+    print(f"CRITICAL: Upload directory {settings.UPLOAD_DIR} is not writable!")
 # 4. MOUNT STATIC FILES 
 # Ensure the UPLOAD_DIR exists before mounting
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
