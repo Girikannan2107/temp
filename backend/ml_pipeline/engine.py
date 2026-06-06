@@ -5,6 +5,7 @@ import time
 import os
 import mimetypes
 import requests
+from dotenv import load_dotenv
 from core.config import settings
 
 class IntelligentDocumentProcessor:
@@ -93,7 +94,6 @@ Return strictly valid JSON matching this exact skeleton structure. Let the AI dy
         print("3. Sending page payload to Gemini API...")
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.api_key}"
-            headers = {'Content-Type': 'application/json'}
             
             payload = {
                 "contents": [{"parts": parts}],

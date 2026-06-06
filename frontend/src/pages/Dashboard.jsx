@@ -549,15 +549,15 @@ export default function Dashboard() {
         const prod = page.production_plan || {};
         const pour = page.pouring_details || {};
         
-        const rawTapping = pour.tapping_temp || "";
+        const rawTapping = String(pour.tapping_temp || "");
         const tappingTemp = parseFloat(rawTapping.replace(/[^0-9.]/g, "")) || 1640;
         
         // Handle dual temps like "1535°C, 1538°C" by taking the first one for the graph
-        const rawPouring = pour.pouring_temp ? pour.pouring_temp.split(',')[0] : "";
+        const rawPouring = String(pour.pouring_temp || "").split(',')[0];
         const pouringTemp = parseFloat(rawPouring.replace(/[^0-9.]/g, "")) || (tappingTemp - 20 - (idx * 5));
         
-        const pouredWeight = parseFloat((pour.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
-        const plannedWeight = parseFloat((prod.casting_weight || "").replace(/[^0-9.]/g, "")) || pouredWeight || 0;
+        const pouredWeight = parseFloat(String(pour.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
+        const plannedWeight = parseFloat(String(prod.casting_weight || "").replace(/[^0-9.]/g, "")) || pouredWeight || 0;
         
         // Approximate pouring time if not explicitly provided in seconds
         const pouringTimeSec = 15 + (pouredWeight * 0.05); 
@@ -597,26 +597,26 @@ export default function Dashboard() {
       const pourDetails = result.pouring_details || {};
       const inspectParams = result.inspection_parameters || {};
       
-      const rawTapping = pourDetails.tapping_temperature || "";
+      const rawTapping = String(pourDetails.tapping_temperature || "");
       const tappingTemp = parseFloat(rawTapping.replace(/[^0-9.]/g, "")) || 1640;
       
-      const tempsStr = pourDetails.pouring_temperature || "";
+      const tempsStr = String(pourDetails.pouring_temperature || "");
       const temps = tempsStr ? tempsStr.split(',').map(t => t.trim()) : [];
       
-      const durationStr = pourDetails.duration || "";
+      const durationStr = String(pourDetails.duration || "");
       const durations = durationStr ? durationStr.split(',').map(d => d.trim()) : [];
       
       const count = Math.max(temps.length, 1);
       
       for (let i = 0; i < count; i++) {
         const tVal = temps[i] || "";
-        const pouringTemp = parseFloat(tVal.replace(/[^0-9.]/g, "")) || (tappingTemp - 20 - (i * 5));
+        const pouringTemp = parseFloat(String(tVal).replace(/[^0-9.]/g, "")) || (tappingTemp - 20 - (i * 5));
         
         const dVal = durations[i] || "";
-        const pouringTimeSec = parseFloat(dVal.replace(/[^0-9.]/g, "")) || (15 + i * 5);
+        const pouringTimeSec = parseFloat(String(dVal).replace(/[^0-9.]/g, "")) || (15 + i * 5);
         
-        const pouredWeight = parseFloat((pourDetails.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
-        const plannedWeight = parseFloat((prodDetails.casting_weight || "").replace(/[^0-9.]/g, "")) || pouredWeight || 0;
+        const pouredWeight = parseFloat(String(pourDetails.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
+        const plannedWeight = parseFloat(String(prodDetails.casting_weight || "").replace(/[^0-9.]/g, "")) || pouredWeight || 0;
         
         rows.push({
           id: `pour-${i}`,
@@ -650,13 +650,13 @@ export default function Dashboard() {
     else if (result.table_data) {
       const docInfo = result.document_info || {};
       const details = result.pouring_details || {};
-      const rawTapping = details.tapping_temperature || "";
+      const rawTapping = String(details.tapping_temperature || "");
       const tappingTemp = parseFloat(rawTapping.replace(/[^0-9.]/g, "")) || 1640;
 
       result.table_data.forEach((row, idx) => {
-        let rawPouring = row.pouring_temperature || "";
+        let rawPouring = String(row.pouring_temperature || "");
         if (!rawPouring && details.pouring_temperatures && details.pouring_temperatures[idx]) {
-          rawPouring = details.pouring_temperatures[idx];
+          rawPouring = String(details.pouring_temperatures[idx] || "");
         }
         const pouringTemp = parseFloat(rawPouring.replace(/[^0-9.]/g, "")) || (tappingTemp - 20 - idx * 15);
         const pouredWeight = parseFloat(row.actual_liquid_poured_kg) || parseFloat(row.planned_pouring_weight) || 0;
@@ -744,7 +744,7 @@ export default function Dashboard() {
               if (heatNo === "N/A") return;
               if (!heatMap[heatNo]) heatMap[heatNo] = [];
               
-              const pouredWeight = parseFloat((page.pouring_details?.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
+              const pouredWeight = parseFloat(String(page.pouring_details?.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
               const pouringTimeSec = 15 + (pouredWeight * 0.05); // Approx
               
               if (pouredWeight > 0) {
@@ -768,17 +768,16 @@ export default function Dashboard() {
             if (heatNo !== "N/A") {
               if (!heatMap[heatNo]) heatMap[heatNo] = [];
               
-              const tempsStr = pourDetails.pouring_temperature || "";
+              const tempsStr = String(pourDetails.pouring_temperature || "");
               const temps = tempsStr ? tempsStr.split(',').map(t => t.trim()) : [];
-              const durationStr = pourDetails.duration || "";
+              const durationStr = String(pourDetails.duration || "");
               const durations = durationStr ? durationStr.split(',').map(d => d.trim()) : [];
               const count = Math.max(temps.length, 1);
               
               for (let i = 0; i < count; i++) {
-                const tVal = temps[i] || "";
                 const dVal = durations[i] || "";
-                const pouringTimeSec = parseFloat(dVal.replace(/[^0-9.]/g, "")) || 45;
-                const pouredWeight = parseFloat((pourDetails.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
+                const pouringTimeSec = parseFloat(String(dVal).replace(/[^0-9.]/g, "")) || 45;
+                const pouredWeight = parseFloat(String(pourDetails.pouring_weight || "").replace(/[^0-9.]/g, "")) || 0;
                 
                 if (pouredWeight > 0 || pouringTimeSec > 0) {
                   heatMap[heatNo].push({
@@ -944,17 +943,8 @@ export default function Dashboard() {
     setHasNextPage(false);
     setTaskId(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await fetch(`${API_BASE_URL}/process?page=0`, {
-        method: 'POST',
-        body: formData,
-      });
-      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
+      const data = await documentApi.processDocument(file);
       setResult(data.data);
       setUploadedFilename(data.filename);
       setTaskId(data.task_id);
@@ -968,6 +958,10 @@ export default function Dashboard() {
     }
   };
 
+  // -------------------------------------------------------------
+  // FIXED: Replaced standard fetch with documentApi.processNextPage
+  // This uses the 60 second timeout config to stop 404 errors!
+  // -------------------------------------------------------------
   const handleProcessNextPage = async () => {
     if (currentPage >= totalPages - 1) return;
     setNextPageLoading(true);
@@ -975,12 +969,7 @@ export default function Dashboard() {
     
     try {
       const nextPage = currentPage + 1;
-      const response = await fetch(`${API_BASE_URL}/process?page=${nextPage}&filename=${uploadedFilename}&task_id=${taskId}`, {
-        method: 'POST'
-      });
-      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
+      const data = await documentApi.processNextPage(nextPage, uploadedFilename, taskId);
       
       setResult(data.data);
       setCurrentPage(data.current_page ?? nextPage);

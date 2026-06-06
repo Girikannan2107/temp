@@ -1,12 +1,10 @@
 import axios from 'axios';
 
-// Vite uses import.meta.env instead of process.env
 export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
 
-// Create a custom axios instance with a 60-second timeout
+// Remove baseURL from the configuration to prevent Axios from mangling the paths
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 60000, // Important: 60 seconds (Wait for Gemini 6-page vision processing)
+    timeout: 60000, // Important: 60 seconds for Gemini inference
 });
 
 export const documentApi = {
@@ -16,14 +14,25 @@ export const documentApi = {
         formData.append('file', file);
         
         try {
-            const response = await apiClient.post('/process', formData, {
+            const response = await apiClient.post(`${API_BASE_URL}/process`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            return response.data; // This now contains { data: { queue_pages, batch_summary } }
+            return response.data;
         } catch (error) {
             console.error("Document processing failed:", error);
+            throw error;
+        }
+    },
+
+    // Process subsequent pages of a multi-page document
+    processNextPage: async (page, filename, taskId) => {
+        try {
+            const response = await apiClient.post(`${API_BASE_URL}/process?page=${page}&filename=${filename}&task_id=${taskId}`);
+            return response.data;
+        } catch (error) {
+            console.error("Next page processing failed:", error);
             throw error;
         }
     },
@@ -35,7 +44,7 @@ export const documentApi = {
 
     getAllDocuments: async () => {
         try {
-            const response = await apiClient.get('/');
+            const response = await apiClient.get(`${API_BASE_URL}/`);
             return response.data;
         } catch (error) {
             console.error("Failed to fetch documents:", error);
@@ -45,7 +54,7 @@ export const documentApi = {
 
     exportDocuments: async () => {
         try {
-            const response = await apiClient.get('/export', {
+            const response = await apiClient.get(`${API_BASE_URL}/export`, {
                 responseType: 'blob'
             });
             return response.data;
