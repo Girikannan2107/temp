@@ -102,9 +102,12 @@ Return strictly valid JSON matching this exact skeleton structure. Let the AI dy
                     "temperature": 0.1 
                 }
             }
+
+            # Define headers for the API request
+            headers = {"Content-Type": "application/json"}
             
             # ==========================================
-            # --- NEW AUTO-RETRY LOGIC ADDED HERE ---
+            # --- AUTO-RETRY LOGIC ---
             # ==========================================
             max_retries = 3
             for attempt in range(max_retries):
@@ -114,20 +117,18 @@ Return strictly valid JSON matching this exact skeleton structure. Let the AI dy
                 if response.status_code == 503:
                     print(f"⚠️ Google servers busy (503). Retrying in 5 seconds... (Attempt {attempt + 1} of {max_retries})")
                     time.sleep(5)
-                    # If this was our last attempt, return the error
                     if attempt == max_retries - 1:
                         return {"error": response.text, "total_pages": total_pages}
-                    continue # Skip the rest of the loop and try again
+                    continue 
                 
-                # If it's a different error (like 400 or 429), break and return it
+                # If it's a different error, return it
                 if response.status_code != 200:
                     print("Status:", response.status_code)
                     print("Response:", response.text)
                     return {"error": response.text, "total_pages": total_pages}
                 
-                # If we get here, the status is 200 OK! Break out of the retry loop.
+                # Success
                 break 
-            # ==========================================
 
             # Parse successful response
             result = response.json()
