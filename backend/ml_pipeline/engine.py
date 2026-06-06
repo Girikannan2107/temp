@@ -22,6 +22,14 @@ class IntelligentDocumentProcessor:
 
         # Determine if the file is a PDF or an Image
         mime_type, _ = mimetypes.guess_type(file_path)
+        if not mime_type:
+            ext = file_path.lower().split('.')[-1]
+            if ext == 'pdf':
+                mime_type = 'application/pdf'
+            elif ext in ['jpg', 'jpeg']:
+                mime_type = 'image/jpeg'
+            elif ext == 'png':
+                mime_type = 'image/png'
         
         try:
             if mime_type == 'application/pdf':

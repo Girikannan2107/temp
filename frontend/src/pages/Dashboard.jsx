@@ -41,7 +41,7 @@ import {
   Area,
   ReferenceLine
 } from 'recharts';
-import { documentApi, API_BASE_URL } from '../services/api';
+import { documentApi } from '../services/api';
 
 // Harmonious industrial color palette for up to 10 heat series
 const HEAT_COLORS = [
