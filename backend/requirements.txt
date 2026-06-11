@@ -4,6 +4,7 @@ python-multipart>=0.0.6
 aiofiles>=23.2.1
 pydantic>=2.4.2
 pydantic-settings>=2.0.3
+motor
 
 # Queue & DB
 celery>=5.3.4
@@ -20,3 +21,6 @@ numpy>=1.26.2
 Pillow>=10.0.1
 pymupdf>=1.27.2.3
 requests>=2.31.0
+
+openpyxl 
+python-dotenv

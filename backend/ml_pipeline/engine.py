@@ -99,10 +99,8 @@ Return strictly valid JSON matching this exact skeleton structure. Let the AI dy
         # Make sure the prompt text is the very first item in the parts array
         parts.insert(0, {"text": prompt})
 
-        print("3. Sending page payload to Gemini API...")
+        print("3. Preparing request payload...")
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.api_key}"
-            
             payload = {
                 "contents": [{"parts": parts}],
                 "generationConfig": {
@@ -114,29 +112,43 @@ Return strictly valid JSON matching this exact skeleton structure. Let the AI dy
             # Define headers for the API request
             headers = {"Content-Type": "application/json"}
             
-            # ==========================================
-            # --- AUTO-RETRY LOGIC ---
-            # ==========================================
-            max_retries = 3
-            for attempt in range(max_retries):
-                response = requests.post(url, headers=headers, json=payload)
+            models_to_try = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-lite"]
+            response = None
+            
+            for model_name in models_to_try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+                print(f"Sending page payload to Gemini API ({model_name})...")
                 
-                # If Google is busy (503), wait 5 seconds and try again
-                if response.status_code == 503:
-                    print(f"⚠️ Google servers busy (503). Retrying in 5 seconds... (Attempt {attempt + 1} of {max_retries})")
-                    time.sleep(5)
-                    if attempt == max_retries - 1:
-                        return {"error": response.text, "total_pages": total_pages}
-                    continue 
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        response = requests.post(url, headers=headers, json=payload)
+                        
+                        # If Google is busy (503), wait 3 seconds and try again
+                        if response.status_code == 503:
+                            print(f"⚠️ Google servers busy (503) for {model_name}. Retrying in 3 seconds... (Attempt {attempt + 1} of {max_retries})")
+                            time.sleep(3)
+                            continue
+                        
+                        # If rate limited (429), try the next model immediately
+                        if response.status_code == 429:
+                            print(f"⚠️ Model {model_name} rate limited (429). Trying fallback model...")
+                            break
+                        
+                        # Success
+                        if response.status_code == 200:
+                            break
+                    except Exception as conn_err:
+                        print(f"Connection issue on attempt {attempt+1} for {model_name}: {conn_err}")
+                        time.sleep(2)
                 
-                # If it's a different error, return it
-                if response.status_code != 200:
-                    print("Status:", response.status_code)
-                    print("Response:", response.text)
-                    return {"error": response.text, "total_pages": total_pages}
-                
-                # Success
-                break 
+                # If we succeeded, break out of the model loop
+                if response is not None and response.status_code == 200:
+                    break
+            
+            if response is None or response.status_code != 200:
+                error_content = response.text if response is not None else "Connection failure to all Gemini models."
+                return {"error": error_content, "total_pages": total_pages}
 
             # Parse successful response
             result = response.json()
@@ -154,8 +166,7 @@ Return strictly valid JSON matching this exact skeleton structure. Let the AI dy
             
         except requests.exceptions.RequestException as req_err:
              print(f"API Request Failed: {req_err}")
-             if req_err.response is not None:
-                 print(f"Response Content: {req_err.response.text}")
-             return {"error": f"API Error: {str(req_err)}", "total_pages": total_pages}
+             error_text = req_err.response.text if req_err.response is not None else str(req_err)
+             return {"error": error_text, "total_pages": total_pages}
         except Exception as e:
-            return {"error": str(e), "total_pages": total_pages}
+             return {"error": str(e), "total_pages": total_pages}
