@@ -1,7 +1,14 @@
 import os
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, validator # Import validator
 from typing import Optional
+
+# Resolve the .env path dynamically relative to this file
+BASE_DIR = Path(__file__).resolve().parent.parent
+env_file_path = BASE_DIR / ".env"
+if not env_file_path.exists():
+    env_file_path = BASE_DIR.parent / ".env"
 
 class Settings(BaseSettings):
     # App Settings
@@ -33,6 +40,6 @@ class Settings(BaseSettings):
             os.makedirs(v, exist_ok=True)
         return v
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=env_file_path, extra="ignore")
 
 settings = Settings()

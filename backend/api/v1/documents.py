@@ -17,6 +17,30 @@ router = APIRouter()
 print("Loading ML Models directly into FastAPI...")
 ocr_engine = IntelligentDocumentProcessor()
 
+def parse_gemini_error(error_content: str) -> tuple:
+    try:
+        import json
+        err_data = json.loads(error_content)
+        if "error" in err_data:
+            err = err_data["error"]
+            code = err.get("code", 500)
+            msg = err.get("message", "Unknown Gemini API error")
+            
+            # Map code/status
+            if err.get("status") == "RESOURCE_EXHAUSTED" or code == 429:
+                return 429, f"Gemini API Quota Exceeded: {msg}"
+            return code if isinstance(code, int) else 500, msg
+    except Exception:
+        pass
+    
+    # Fallback to string search
+    if "RESOURCE_EXHAUSTED" in error_content or "429" in error_content:
+        return 429, "Gemini API rate limit or quota exceeded. Please try again later."
+    if "503" in error_content or "UNAVAILABLE" in error_content:
+        return 503, "Gemini API service is temporarily unavailable. Please retry shortly."
+        
+    return 500, f"AI Extraction Pipeline Error: {error_content}"
+
 def merge_page_data(existing_data: dict, new_page_data: dict) -> dict:
     merged = existing_data.copy()
     for key, val in new_page_data.items():
@@ -92,13 +116,12 @@ async def upload_and_process_document(
         print(f"DEBUG - Extracted page results payload: {result_payload}")
         
         if isinstance(result_payload, dict) and "error" in result_payload:
-            # Dynamically set to 503 if Google is busy, else 500
             error_msg = result_payload['error']
-            status = 503 if "503" in error_msg or "UNAVAILABLE" in error_msg else 500
+            status, cleaned_msg = parse_gemini_error(error_msg)
             
             raise HTTPException(
                 status_code=status, 
-                detail=f"AI Extraction Pipeline Error: {error_msg}"
+                detail=cleaned_msg
             )
             
         extracted_data = result_payload["extracted_data"]
@@ -110,13 +133,13 @@ async def upload_and_process_document(
             existing_doc = await repo.get_document(task_id)
             if existing_doc:
                 accumulated_data = merge_page_data(existing_doc.get("extracted_data", {}) or {}, extracted_data)
-                await repo.save_document(task_id, accumulated_data)
+                await repo.save_document(task_id, accumulated_data, filename=filename_used)
             else:
-                await repo.save_document(task_id, extracted_data)
+                await repo.save_document(task_id, extracted_data, filename=filename_used)
                 accumulated_data = extracted_data
         else:
             task_id = uuid.uuid4().hex
-            await repo.save_document(task_id, extracted_data)
+            await repo.save_document(task_id, extracted_data, filename=filename_used)
             accumulated_data = extracted_data
         
         return {
